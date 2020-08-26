@@ -32,6 +32,7 @@ module.exports = (() => {
             type: 'textbox',
             id: 'prefix',
             name: 'Prefix',
+            value: '',
             note:
               'E.g. For "<" as the prefix <Kappa will work as intended. Can be left empty. Suggestion; x or . for ease of use.',
           },
@@ -39,6 +40,7 @@ module.exports = (() => {
             type: 'textbox',
             id: 'suffix',
             name: 'Suffix',
+            value: '',
             note: 'E.g. For ">" as the suffix Kappa> will work as intended. Suggestion; leave empty for ease of use.',
           },
         ],
@@ -108,7 +110,20 @@ module.exports = (() => {
               return panel.getElement()
             }
 
-            libraries = ['TwitchGlobal', 'TwitchSubscriber', 'FrankerFaceZ', 'BTTV', 'BTTV2'].map((lib) => BdApi.emotes[lib])
+            waitForEmotes() {
+              return new Promise((resolve, reject) => {
+                const awaitEmotes = setInterval(() => {
+                  this.libraries = ['TwitchGlobal', 'TwitchSubscriber', 'FrankerFaceZ', 'BTTV', 'BTTV2'].map(
+                    (lib) => BdApi.emotes[lib],
+                  )
+
+                  if (this.libraries.every((lib) => Object.keys(lib).length)) {
+                    clearInterval(awaitEmotes)
+                    resolve()
+                  }
+                }, 1000)
+              })
+            }
 
             findEmote(name) {
               for (const emotes of this.libraries) {
@@ -136,7 +151,9 @@ module.exports = (() => {
               }
             }
 
-            onStart() {
+            async onStart() {
+              await this.waitForEmotes()
+
               Patcher.before(MessageActions, 'sendMessage', (_, [, message]) => {
                 this.replaceText(message)
               })
@@ -156,4 +173,3 @@ module.exports = (() => {
         return plugin(Plugin, Api)
       })(global.ZeresPluginLibrary.buildPlugin(config))
 })()
-
